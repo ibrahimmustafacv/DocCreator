@@ -1,0 +1,1108 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DocCreator - محرر الوثائق البسيط</title>
+    <meta name="description" content="محرر وثائق بسيط يدعم العربية والإنجليزية مع إمكانية التصدير إلى PDF و Word">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Arabic:wght@100;200;300;400;500;600;700;800;900&family=Inter:wght@100;200;300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    
+    <!-- External Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/docx/8.5.0/docx.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Noto Sans Arabic', 'Inter', sans-serif;
+            background-color: #f8fafc;
+            color: #1e293b;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+        
+        /* Header */
+        .header {
+            background: white;
+            border-bottom: 1px solid #e2e8f0;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        
+        .header-content {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            height: 64px;
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .logo-icon {
+            width: 32px;
+            height: 32px;
+            background: #3b82f6;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+        
+        .logo-text h1 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #1e293b;
+        }
+        
+        .logo-text p {
+            font-size: 0.875rem;
+            color: #64748b;
+        }
+        
+        .nav-buttons {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+        
+        .nav-btn {
+            padding: 8px 16px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            font-size: 0.875rem;
+            font-weight: 500;
+            transition: all 0.2s;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .nav-btn-primary {
+            background: #3b82f6;
+            color: white;
+        }
+        
+        .nav-btn-primary:hover {
+            background: #2563eb;
+        }
+        
+        .nav-btn-secondary {
+            background: #8b5cf6;
+            color: white;
+        }
+        
+        .nav-btn-secondary:hover {
+            background: #7c3aed;
+        }
+        
+        /* Main Content */
+        .main-content {
+            padding: 32px 0;
+        }
+        
+        .content-grid {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 32px;
+            margin-bottom: 32px;
+        }
+        
+        .card {
+            background: white;
+            border-radius: 12px;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            padding: 24px;
+        }
+        
+        .card-title {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 16px;
+        }
+        
+        /* Language Selector */
+        .language-selector {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        
+        .radio-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .radio-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        
+        .radio-item:hover {
+            background: #f1f5f9;
+        }
+        
+        .radio-item input[type="radio"] {
+            margin: 0;
+        }
+        
+        /* Text Editor */
+        .text-editor {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+        
+        .editor-tabs {
+            display: flex;
+            gap: 4px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        
+        .tab-btn {
+            padding: 8px 16px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 0.875rem;
+            color: #64748b;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s;
+        }
+        
+        .tab-btn.active {
+            color: #3b82f6;
+            border-bottom-color: #3b82f6;
+        }
+        
+        .editor-content {
+            display: none;
+        }
+        
+        .editor-content.active {
+            display: block;
+        }
+        
+        .editor-textarea {
+            width: 100%;
+            min-height: 300px;
+            padding: 16px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            font-family: 'Noto Sans Arabic', 'Inter', sans-serif;
+            font-size: 14px;
+            line-height: 1.6;
+            resize: vertical;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        
+        .editor-textarea:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+        
+        .editor-textarea[dir="rtl"] {
+            text-align: right;
+            direction: rtl;
+        }
+        
+        .editor-textarea[dir="ltr"] {
+            text-align: left;
+            direction: ltr;
+        }
+        
+        /* Image Uploader */
+        .image-uploader {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+        
+        .upload-area {
+            border: 2px dashed #d1d5db;
+            border-radius: 8px;
+            padding: 32px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: #f9fafb;
+        }
+        
+        .upload-area:hover {
+            border-color: #3b82f6;
+            background: #f0f9ff;
+        }
+        
+        .upload-area.dragover {
+            border-color: #3b82f6;
+            background: #dbeafe;
+        }
+        
+        .upload-icon {
+            font-size: 48px;
+            color: #9ca3af;
+            margin-bottom: 16px;
+        }
+        
+        .upload-text {
+            color: #6b7280;
+            font-size: 0.875rem;
+        }
+        
+        .file-input {
+            display: none;
+        }
+        
+        .image-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 16px;
+        }
+        
+        .image-item {
+            position: relative;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid #e2e8f0;
+        }
+        
+        .image-item img {
+            width: 100%;
+            height: 80px;
+            object-fit: cover;
+        }
+        
+        .image-remove {
+            position: absolute;
+            top: 4px;
+            right: 4px;
+            width: 24px;
+            height: 24px;
+            background: rgba(239, 68, 68, 0.9);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .image-name {
+            padding: 8px;
+            font-size: 0.75rem;
+            color: #6b7280;
+            background: #f9fafb;
+            text-align: center;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        
+        /* Export Actions */
+        .export-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        
+        .export-btn {
+            padding: 12px 16px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            font-size: 0.875rem;
+            font-weight: 500;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            justify-content: center;
+        }
+        
+        .export-btn-pdf {
+            background: #ef4444;
+            color: white;
+        }
+        
+        .export-btn-pdf:hover {
+            background: #dc2626;
+        }
+        
+        .export-btn-word {
+            background: #2563eb;
+            color: white;
+        }
+        
+        .export-btn-word:hover {
+            background: #1d4ed8;
+        }
+        
+        .export-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        /* Preview */
+        .preview-card {
+            grid-column: 1 / -1;
+        }
+        
+        .preview-content {
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 24px;
+            background: white;
+            min-height: 400px;
+        }
+        
+        .preview-empty {
+            text-align: center;
+            color: #9ca3af;
+            font-style: italic;
+            padding: 64px 0;
+        }
+        
+        .preview-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #1e293b;
+            text-align: center;
+            margin-bottom: 24px;
+        }
+        
+        .preview-section {
+            margin-bottom: 32px;
+        }
+        
+        .preview-section h3 {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 16px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #e5e7eb;
+        }
+        
+        .preview-section[dir="rtl"] h3 {
+            text-align: right;
+        }
+        
+        .preview-section[dir="ltr"] h3 {
+            text-align: left;
+        }
+        
+        .preview-text {
+            white-space: pre-wrap;
+            line-height: 1.8;
+            color: #374151;
+        }
+        
+        .preview-text[dir="rtl"] {
+            text-align: right;
+            direction: rtl;
+        }
+        
+        .preview-text[dir="ltr"] {
+            text-align: left;
+            direction: ltr;
+        }
+        
+        .preview-images {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 16px;
+            margin-top: 24px;
+        }
+        
+        .preview-image {
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid #e2e8f0;
+        }
+        
+        .preview-image img {
+            width: 100%;
+            height: 150px;
+            object-fit: cover;
+        }
+        
+        .preview-image-name {
+            padding: 8px;
+            font-size: 0.75rem;
+            color: #6b7280;
+            background: #f9fafb;
+            text-align: center;
+        }
+        
+        /* Word Count */
+        .word-count {
+            font-size: 0.75rem;
+            color: #6b7280;
+            text-align: right;
+            margin-top: 8px;
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .header-content {
+                flex-wrap: wrap;
+                gap: 12px;
+            }
+            
+            .logo-text p {
+                display: none;
+            }
+            
+            .nav-btn {
+                padding: 6px 12px;
+                font-size: 0.75rem;
+            }
+            
+            .content-grid {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+            
+            .card {
+                padding: 16px;
+            }
+        }
+        
+        /* Loading States */
+        .loading {
+            opacity: 0.7;
+            pointer-events: none;
+        }
+        
+        .spinner {
+            width: 16px;
+            height: 16px;
+            border: 2px solid #f3f4f6;
+            border-top: 2px solid #3b82f6;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* Utilities */
+        .hidden {
+            display: none;
+        }
+        
+        .mb-4 {
+            margin-bottom: 16px;
+        }
+        
+        .text-center {
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="container">
+            <div class="header-content">
+                <div class="logo">
+                    <div class="logo-icon">📄</div>
+                    <div class="logo-text">
+                        <h1>DocCreator</h1>
+                        <p>محرر الوثائق البسيط</p>
+                    </div>
+                </div>
+                
+                <div class="nav-buttons">
+                    <a href="https://ibrahimmustafacv.github.io/" target="_blank" class="nav-btn nav-btn-primary">
+                        🔗 للمزيد من المشاريع
+                    </a>
+                    <a href="https://ibrahimmustafacv.github.io/my-social-media-page/" target="_blank" class="nav-btn nav-btn-secondary">
+                        👥 تابعنا هنا
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="main-content">
+            <div class="content-grid">
+                <!-- Language Selector -->
+                <div class="card">
+                    <h2 class="card-title">اختر اللغة</h2>
+                    <div class="language-selector">
+                        <div class="radio-group">
+                            <label class="radio-item">
+                                <input type="radio" name="language" value="english" id="lang-english">
+                                <span>English Only</span>
+                            </label>
+                            <label class="radio-item">
+                                <input type="radio" name="language" value="arabic" id="lang-arabic" checked>
+                                <span>العربية فقط</span>
+                            </label>
+                            <label class="radio-item">
+                                <input type="radio" name="language" value="bilingual" id="lang-bilingual">
+                                <span>ثنائي اللغة</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Text Editor -->
+                <div class="card">
+                    <h2 class="card-title">محرر النصوص</h2>
+                    <div class="text-editor">
+                        <div class="editor-tabs">
+                            <button class="tab-btn active" data-tab="arabic">العربية</button>
+                            <button class="tab-btn" data-tab="english">English</button>
+                        </div>
+                        
+                        <div class="editor-content active" id="arabic-editor">
+                            <textarea 
+                                class="editor-textarea" 
+                                placeholder="اكتب النص العربي هنا..."
+                                dir="rtl"
+                                id="arabic-text"
+                            ></textarea>
+                            <div class="word-count" id="arabic-count">عدد الكلمات: 0</div>
+                        </div>
+                        
+                        <div class="editor-content" id="english-editor">
+                            <textarea 
+                                class="editor-textarea" 
+                                placeholder="Type your English text here..."
+                                dir="ltr"
+                                id="english-text"
+                            ></textarea>
+                            <div class="word-count" id="english-count">Word count: 0</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Image Uploader -->
+                <div class="card">
+                    <h2 class="card-title">رفع الصور</h2>
+                    <div class="image-uploader">
+                        <div class="upload-area" id="upload-area">
+                            <div class="upload-icon">📁</div>
+                            <div class="upload-text">
+                                <p>اسحب الصور هنا أو انقر للاختيار</p>
+                                <p>يدعم: JPG, PNG, GIF</p>
+                            </div>
+                            <input type="file" class="file-input" id="file-input" multiple accept="image/*">
+                        </div>
+                        
+                        <div class="image-list" id="image-list"></div>
+                    </div>
+                </div>
+
+                <!-- Export Actions -->
+                <div class="card">
+                    <h2 class="card-title">تصدير الوثيقة</h2>
+                    <div class="export-actions">
+                        <button class="export-btn export-btn-pdf" id="export-pdf">
+                            📄 تصدير PDF
+                        </button>
+                        <button class="export-btn export-btn-word" id="export-word">
+                            📝 تصدير Word
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Preview -->
+            <div class="card preview-card">
+                <h2 class="card-title">معاينة الوثيقة</h2>
+                <div class="preview-content" id="preview-content">
+                    <div class="preview-empty">
+                        ابدأ بكتابة النصوص أو إضافة الصور لرؤية المعاينة
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global state
+        let documentState = {
+            language: 'arabic',
+            content: {
+                arabic: '',
+                english: ''
+            },
+            images: []
+        };
+
+        // DOM elements
+        const languageInputs = document.querySelectorAll('input[name="language"]');
+        const tabButtons = document.querySelectorAll('.tab-btn');
+        const editorContents = document.querySelectorAll('.editor-content');
+        const arabicText = document.getElementById('arabic-text');
+        const englishText = document.getElementById('english-text');
+        const arabicCount = document.getElementById('arabic-count');
+        const englishCount = document.getElementById('english-count');
+        const uploadArea = document.getElementById('upload-area');
+        const fileInput = document.getElementById('file-input');
+        const imageList = document.getElementById('image-list');
+        const previewContent = document.getElementById('preview-content');
+        const exportPdfBtn = document.getElementById('export-pdf');
+        const exportWordBtn = document.getElementById('export-word');
+
+        // Language selector
+        languageInputs.forEach(input => {
+            input.addEventListener('change', (e) => {
+                documentState.language = e.target.value;
+                updateTabs();
+                updatePreview();
+            });
+        });
+
+        // Tab switching
+        tabButtons.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const tabName = e.target.dataset.tab;
+                switchTab(tabName);
+            });
+        });
+
+        function switchTab(tabName) {
+            tabButtons.forEach(btn => btn.classList.remove('active'));
+            editorContents.forEach(content => content.classList.remove('active'));
+            
+            document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
+            document.getElementById(`${tabName}-editor`).classList.add('active');
+        }
+
+        function updateTabs() {
+            const { language } = documentState;
+            
+            if (language === 'english') {
+                switchTab('english');
+                tabButtons[0].style.display = 'none'; // Hide Arabic tab
+                tabButtons[1].style.display = 'block';
+            } else if (language === 'arabic') {
+                switchTab('arabic');
+                tabButtons[0].style.display = 'block';
+                tabButtons[1].style.display = 'none'; // Hide English tab
+            } else {
+                tabButtons[0].style.display = 'block';
+                tabButtons[1].style.display = 'block';
+            }
+        }
+
+        // Text editors
+        arabicText.addEventListener('input', (e) => {
+            documentState.content.arabic = e.target.value;
+            updateWordCount('arabic');
+            updatePreview();
+        });
+
+        englishText.addEventListener('input', (e) => {
+            documentState.content.english = e.target.value;
+            updateWordCount('english');
+            updatePreview();
+        });
+
+        function updateWordCount(language) {
+            const text = documentState.content[language];
+            const wordCount = text.trim() ? text.trim().split(/\s+/).length : 0;
+            
+            if (language === 'arabic') {
+                arabicCount.textContent = `عدد الكلمات: ${wordCount}`;
+            } else {
+                englishCount.textContent = `Word count: ${wordCount}`;
+            }
+        }
+
+        // Image upload
+        uploadArea.addEventListener('click', () => fileInput.click());
+        uploadArea.addEventListener('dragover', handleDragOver);
+        uploadArea.addEventListener('drop', handleDrop);
+        fileInput.addEventListener('change', handleFileSelect);
+
+        function handleDragOver(e) {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        }
+
+        function handleDrop(e) {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            const files = Array.from(e.dataTransfer.files);
+            handleFiles(files);
+        }
+
+        function handleFileSelect(e) {
+            const files = Array.from(e.target.files);
+            handleFiles(files);
+        }
+
+        function handleFiles(files) {
+            files.forEach(file => {
+                if (file.type.startsWith('image/')) {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        const image = {
+                            id: Date.now() + Math.random(),
+                            name: file.name,
+                            src: e.target.result,
+                            file: file
+                        };
+                        documentState.images.push(image);
+                        updateImageList();
+                        updatePreview();
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+        }
+
+        function updateImageList() {
+            imageList.innerHTML = '';
+            documentState.images.forEach(image => {
+                const imageItem = document.createElement('div');
+                imageItem.className = 'image-item';
+                imageItem.innerHTML = `
+                    <img src="${image.src}" alt="${image.name}">
+                    <button class="image-remove" onclick="removeImage('${image.id}')">×</button>
+                    <div class="image-name">${image.name}</div>
+                `;
+                imageList.appendChild(imageItem);
+            });
+        }
+
+        function removeImage(imageId) {
+            documentState.images = documentState.images.filter(img => img.id !== imageId);
+            updateImageList();
+            updatePreview();
+        }
+
+        // Preview
+        function updatePreview() {
+            const { language, content, images } = documentState;
+            
+            if (!content.arabic && !content.english && images.length === 0) {
+                previewContent.innerHTML = '<div class="preview-empty">ابدأ بكتابة النصوص أو إضافة الصور لرؤية المعاينة</div>';
+                return;
+            }
+
+            let html = '<div class="preview-title">وثيقة مُصدرة</div>';
+
+            // English content
+            if (content.english && (language === 'english' || language === 'bilingual')) {
+                html += `
+                    <div class="preview-section" dir="ltr">
+                        <h3>English Content</h3>
+                        <div class="preview-text" dir="ltr">${content.english}</div>
+                    </div>
+                `;
+            }
+
+            // Arabic content
+            if (content.arabic && (language === 'arabic' || language === 'bilingual')) {
+                html += `
+                    <div class="preview-section" dir="rtl">
+                        <h3>المحتوى العربي</h3>
+                        <div class="preview-text" dir="rtl">${content.arabic}</div>
+                    </div>
+                `;
+            }
+
+            // Images
+            if (images.length > 0) {
+                html += '<div class="preview-images">';
+                images.forEach(image => {
+                    html += `
+                        <div class="preview-image">
+                            <img src="${image.src}" alt="${image.name}">
+                            <div class="preview-image-name">${image.name}</div>
+                        </div>
+                    `;
+                });
+                html += '</div>';
+            }
+
+            previewContent.innerHTML = html;
+        }
+
+        // Export functions
+        exportPdfBtn.addEventListener('click', exportToPdf);
+        exportWordBtn.addEventListener('click', exportToWord);
+
+        async function exportToPdf() {
+            if (!hasContent()) {
+                alert('يرجى إضافة محتوى قبل التصدير');
+                return;
+            }
+
+            exportPdfBtn.disabled = true;
+            exportPdfBtn.innerHTML = '<div class="spinner"></div> جاري التصدير...';
+
+            try {
+                const { jsPDF } = window.jspdf;
+                const pdf = new jsPDF('p', 'mm', 'a4');
+
+                // Create temporary div for PDF content
+                const tempDiv = document.createElement('div');
+                tempDiv.style.position = 'absolute';
+                tempDiv.style.left = '-9999px';
+                tempDiv.style.width = '210mm';
+                tempDiv.style.padding = '20mm';
+                tempDiv.style.backgroundColor = 'white';
+                tempDiv.style.fontFamily = 'Noto Sans Arabic, Inter, sans-serif';
+                
+                let htmlContent = `
+                    <h1 style="font-size: 28px; margin-bottom: 40px; text-align: center; color: #1a1a1a; font-weight: 600;">وثيقة مُصدرة</h1>
+                `;
+
+                // Add English content
+                if (documentState.content.english && (documentState.language === 'english' || documentState.language === 'bilingual')) {
+                    htmlContent += `
+                        <div style="margin-bottom: 50px;">
+                            <h2 style="font-size: 22px; margin-bottom: 20px; color: #2c3e50; direction: ltr; font-weight: 500; border-bottom: 2px solid #3498db; padding-bottom: 10px;">English Content</h2>
+                    `;
+                    const englishParagraphs = documentState.content.english.split('\n').filter(p => p.trim());
+                    englishParagraphs.forEach(paragraph => {
+                        htmlContent += `<p style="font-size: 16px; line-height: 1.8; margin-bottom: 20px; direction: ltr; color: #2c3e50;">${paragraph}</p>`;
+                    });
+                    htmlContent += '</div>';
+                }
+
+                // Add Arabic content
+                if (documentState.content.arabic && (documentState.language === 'arabic' || documentState.language === 'bilingual')) {
+                    htmlContent += `
+                        <div style="margin-bottom: 50px;">
+                            <h2 style="font-size: 22px; margin-bottom: 20px; color: #2c3e50; direction: rtl; font-family: Noto Sans Arabic; font-weight: 500; border-bottom: 2px solid #e74c3c; padding-bottom: 10px; text-align: right;">المحتوى العربي</h2>
+                    `;
+                    const arabicParagraphs = documentState.content.arabic.split('\n').filter(p => p.trim());
+                    arabicParagraphs.forEach(paragraph => {
+                        htmlContent += `<p style="font-size: 18px; line-height: 2.2; margin-bottom: 25px; direction: rtl; text-align: right; font-family: Noto Sans Arabic; color: #2c3e50;">${paragraph}</p>`;
+                    });
+                    htmlContent += '</div>';
+                }
+
+                // Add images
+                documentState.images.forEach(image => {
+                    htmlContent += `
+                        <div style="margin: 40px 0; text-align: center;">
+                            <img src="${image.src}" style="max-width: 85%; height: auto; border: 2px solid #bdc3c7; border-radius: 12px;" alt="${image.name}">
+                            <p style="margin-top: 10px; font-size: 14px; color: #7f8c8d; font-style: italic;">${image.name}</p>
+                        </div>
+                    `;
+                });
+
+                tempDiv.innerHTML = htmlContent;
+                document.body.appendChild(tempDiv);
+
+                // Generate PDF
+                const canvas = await html2canvas(tempDiv, {
+                    scale: 2,
+                    useCORS: true,
+                    allowTaint: true,
+                    backgroundColor: '#ffffff'
+                });
+
+                const pdfWidth = pdf.internal.pageSize.getWidth();
+                const pdfHeight = pdf.internal.pageSize.getHeight();
+                const canvasWidth = canvas.width;
+                const canvasHeight = canvas.height;
+                
+                const scale = pdfWidth / (canvasWidth / 2);
+                const scaledHeight = (canvasHeight / 2) * scale;
+                const pagesNeeded = Math.ceil(scaledHeight / pdfHeight);
+                
+                for (let pageIndex = 0; pageIndex < pagesNeeded; pageIndex++) {
+                    if (pageIndex > 0) pdf.addPage();
+                    
+                    const startY = pageIndex * (pdfHeight / scale) * 2;
+                    const endY = Math.min(startY + (pdfHeight / scale) * 2, canvasHeight);
+                    const sectionHeight = endY - startY;
+                    
+                    if (sectionHeight <= 0) break;
+                    
+                    const pageCanvas = document.createElement('canvas');
+                    const pageCtx = pageCanvas.getContext('2d');
+                    
+                    if (pageCtx) {
+                        pageCanvas.width = canvasWidth;
+                        pageCanvas.height = sectionHeight;
+                        
+                        pageCtx.drawImage(canvas, 0, startY, canvasWidth, sectionHeight, 0, 0, canvasWidth, sectionHeight);
+                        
+                        const pageImgData = pageCanvas.toDataURL('image/png');
+                        const imgHeight = (sectionHeight / 2) * scale;
+                        
+                        pdf.addImage(pageImgData, 'PNG', 0, 0, pdfWidth, Math.min(imgHeight, pdfHeight));
+                    }
+                }
+
+                document.body.removeChild(tempDiv);
+                pdf.save('document.pdf');
+
+            } catch (error) {
+                console.error('Error generating PDF:', error);
+                alert('حدث خطأ أثناء تصدير PDF');
+            } finally {
+                exportPdfBtn.disabled = false;
+                exportPdfBtn.innerHTML = '📄 تصدير PDF';
+            }
+        }
+
+        async function exportToWord() {
+            if (!hasContent()) {
+                alert('يرجى إضافة محتوى قبل التصدير');
+                return;
+            }
+
+            exportWordBtn.disabled = true;
+            exportWordBtn.innerHTML = '<div class="spinner"></div> جاري التصدير...';
+
+            try {
+                const { Document, Paragraph, TextRun, ImageRun, HeadingLevel, Packer } = docx;
+
+                const children = [];
+
+                // Add title
+                children.push(
+                    new Paragraph({
+                        children: [
+                            new TextRun({
+                                text: "وثيقة مُصدرة",
+                                bold: true,
+                                size: 32
+                            })
+                        ],
+                        heading: HeadingLevel.HEADING_1,
+                        alignment: 'center'
+                    })
+                );
+
+                // Add English content
+                if (documentState.content.english && (documentState.language === 'english' || documentState.language === 'bilingual')) {
+                    children.push(
+                        new Paragraph({
+                            children: [
+                                new TextRun({
+                                    text: "English Content",
+                                    bold: true,
+                                    size: 24
+                                })
+                            ],
+                            heading: HeadingLevel.HEADING_2
+                        })
+                    );
+
+                    const englishParagraphs = documentState.content.english.split('\n').filter(p => p.trim());
+                    englishParagraphs.forEach(paragraph => {
+                        children.push(
+                            new Paragraph({
+                                children: [
+                                    new TextRun({
+                                        text: paragraph,
+                                        size: 22
+                                    })
+                                ]
+                            })
+                        );
+                    });
+                }
+
+                // Add Arabic content
+                if (documentState.content.arabic && (documentState.language === 'arabic' || documentState.language === 'bilingual')) {
+                    children.push(
+                        new Paragraph({
+                            children: [
+                                new TextRun({
+                                    text: "المحتوى العربي",
+                                    bold: true,
+                                    size: 24
+                                })
+                            ],
+                            heading: HeadingLevel.HEADING_2,
+                            rightToLeft: true
+                        })
+                    );
+
+                    const arabicParagraphs = documentState.content.arabic.split('\n').filter(p => p.trim());
+                    arabicParagraphs.forEach(paragraph => {
+                        children.push(
+                            new Paragraph({
+                                children: [
+                                    new TextRun({
+                                        text: paragraph,
+                                        size: 22
+                                    })
+                                ],
+                                rightToLeft: true
+                            })
+                        );
+                    });
+                }
+
+                // Create document
+                const doc = new Document({
+                    sections: [{
+                        properties: {},
+                        children: children
+                    }]
+                });
+
+                // Generate and save
+                const blob = await Packer.toBlob(doc);
+                saveAs(blob, 'document.docx');
+
+            } catch (error) {
+                console.error('Error generating Word document:', error);
+                alert('حدث خطأ أثناء تصدير Word');
+            } finally {
+                exportWordBtn.disabled = false;
+                exportWordBtn.innerHTML = '📝 تصدير Word';
+            }
+        }
+
+        function hasContent() {
+            return documentState.content.arabic || documentState.content.english || documentState.images.length > 0;
+        }
+
+        // Initialize
+        updateTabs();
+        updatePreview();
+    </script>
+</body>
+</html>
